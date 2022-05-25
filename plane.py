@@ -21,7 +21,7 @@ UNDERLAY_HELI_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay
 HELI_MASK = pygame.mask.from_surface(UNDERLAY_HELI_RUNWAY)
 
 class Plane():
-    def __init__(self, x, y, direction):
+    def __init__(self, x, y, direction, level):
         super().__init__()
         self.plane_id = self.__class__.__name__
         self.x = x
@@ -40,10 +40,19 @@ class Plane():
         self.selected = False
         self.new_select = False
         self.inside = False
+        self.level = 1
         self.movements = []
+        self.movements_length = len(self.movements)
+        self.interacted = False
+        self.length_of_movements = 0
 
 
     def draw(self, win):
+        '''
+        Draw the plane using an offset to the center of the plane
+        :param win: the window to draw the plane on
+        :return:
+        '''
         x_offset = self.x - self.plane_img.get_rect().width / 2
         y_offset = self.y - self.plane_img.get_rect().height / 2
 
@@ -51,14 +60,24 @@ class Plane():
         for i in range(len(self.movements)):
             if i == 0:
                 continue
+            # only draw every other line
             pygame.draw.line(win, (80, 80, 80), (self.movements[i - 1][0], self.movements[i - 1][1]),
                              (self.movements[i][0], self.movements[i][1]), 3)
+
+        if self.movements:
+            # draw a dot at the last coordinate in the list
+            pygame.draw.circle(win, (80, 80, 80), (self.movements[-1][0], self.movements[-1][1]), 6)
 
         # draw the plane
         win.blit(self.plane_img, (x_offset, y_offset))
 
     # move the plane in the direction of the direction vector
     def move(self, cursor):
+        '''
+        Change the x and y coordinates of the plane based on the direction vector
+        param cursor: the cursor
+        return:
+        '''
         if self.movements:
             self.track_movements(cursor)
             self.rect = pygame.rect.Rect(self.x - self.plane_img.get_rect().width / 2, self.y - self.plane_img.get_rect().height / 2, self.plane_img.get_rect().width, self.plane_img.get_rect().height)
@@ -66,10 +85,49 @@ class Plane():
         self.rect = pygame.rect.Rect(self.x - self.plane_img.get_rect().width / 2,
                                      self.y - self.plane_img.get_rect().height / 2, self.plane_img.get_rect().width,
                                      self.plane_img.get_rect().height)
+        self.smooth_angle()
+        self.plane_img = pygame.transform.rotate(self.default_img, self.angle)
         self.x += self.vel * self.direction[0]
         self.y += self.vel * self.direction[1]
 
+    def smooth_angle(self):
+        """
+        This will smooth the angle of the plane so that it doesn't jerk when it moves
+        This is done by calculating what the new angle should be and then calculating,
+         the difference between the current angle and the new angle
+        Then the angle is set to the new angle plus the difference
+        :return:
+        """
+        new_angle = math.atan2(self.direction[0], self.direction[1]) * 180 / math.pi
+        # smooth angles out
+        if abs(new_angle - self.angle) > 1:
+            if new_angle > self.angle:
+                difference = new_angle - self.angle
+                if difference > 180:
+                    difference -= 360
+                elif difference < -180:
+                    difference += 360
+                self.angle += difference / 10
+            elif new_angle < self.angle:
+                difference = self.angle - new_angle
+                if difference > 180:
+                    difference -= 360
+                elif difference < -180:
+                    difference += 360
+                self.angle -= difference / 10
+            elif new_angle == self.angle:
+                self.angle = new_angle
+        else:
+            self.angle = new_angle
+
+
     def track_movements(self, cursor):
+        '''
+        This will track the movements array and change the vector of the plane
+        depending on where the next movement is
+        :param cursor:
+        :return:
+        '''
         # choose a random coordinate on the game board
         move = self.movements[0]
         # create a vector between the plane and the coordinate
@@ -81,12 +139,22 @@ class Plane():
         self.y += self.vel * self.direction[1]
         if abs(self.x - move[0]) < 1 and abs(self.y - move[1]) < 1:
             self.movements.pop(0)
-        self.angle = math.atan2(self.direction[0], self.direction[1]) * 180 / math.pi
+
+        new_angle = math.atan2(self.direction[0], self.direction[1]) * 180 / math.pi
+
+        # smooth angles out
+        self.smooth_angle()
         self.plane_image_check()
         self.plane_img = pygame.transform.rotate(self.plane_img, self.angle)
 
-
     def wall_collide(self, mask, x=0, y=0):
+        '''
+        Manages the plane collision with the walls
+        :param mask:
+        :param x:
+        :param y:
+        :return:
+        '''
         plane_mask = pygame.mask.from_surface(self.plane_img)
         offset = (
             (self.x - x) - self.plane_img.get_rect().width / 2, (self.y - y) - self.plane_img.get_rect().height / 2)
@@ -94,6 +162,12 @@ class Plane():
         return poi
 
     def plane_collide(self, other_plane):
+        '''
+        Manages the plane collisions with other planes
+        using the offset of both planes
+        :param other_plane:
+        :return:
+        '''
         other_mask = other_plane.mask
         x = other_plane.x
         y = other_plane.y
@@ -105,6 +179,13 @@ class Plane():
         return poi
 
     def runway_collide(self, runway_mask, x, y):
+        '''
+        Manages the collisions between the plane and the runway
+        :param runway_mask:
+        :param x:
+        :param y:
+        :return:
+        '''
         plane_mask = pygame.mask.from_surface(self.plane_img)
         offset = (
             (self.x - x) - self.plane_img.get_rect().width / 2, (self.y - y) - self.plane_img.get_rect().height / 2)
@@ -112,6 +193,10 @@ class Plane():
         return poi
 
     def plane_image_check(self):
+        '''
+        Sets the plane image using the subclasses
+        :return:
+        '''
         # for each subclass of Plane, set the plane image to the correct image
         for plane in Plane.__subclasses__():
             if self.plane_id == plane.__name__:
@@ -120,7 +205,7 @@ class Plane():
     def handle_runway(self, game):
         for plane in Plane.__subclasses__():
             if self.plane_id == plane.__name__:
-                if self.runway_collide(self.runway_mask, 0, 0):
+                if self.runway_collide(self.runway_mask, 0, 0) and self.interacted is not False:
                     game.planes.remove(self)
                     game.increase_score()
 
@@ -142,12 +227,12 @@ class Plane():
         self.plane_image_check()
         self.angle = math.atan2(self.direction[0], self.direction[1]) * 180 / math.pi
         self.plane_img = pygame.transform.rotate(self.plane_img, self.angle)
-
+        self.interacted = False
 
 # create a child class of the plane class called small plane
 class SmallPlane(Plane):
-    def __init__(self, x, y, direction):
-        super().__init__(x, y, direction)
+    def __init__(self, x, y, direction, level):
+        super().__init__(x, y, direction, level)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(SMALL_PLANE, self.angle)
         self.default_img = SMALL_PLANE
@@ -160,8 +245,8 @@ class SmallPlane(Plane):
 
 # create a child class of the plane class called big plane
 class BigPlane(Plane):
-    def __init__(self, x, y, direction):
-        super().__init__(x, y, direction)
+    def __init__(self, x, y, direction, level):
+        super().__init__(x, y, direction, level)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(BIG_PLANE, self.angle)
         self.default_img = BIG_PLANE
@@ -173,8 +258,8 @@ class BigPlane(Plane):
 
 
 class FastPlane(Plane):
-    def __init__(self, x, y, direction):
-        super().__init__(x, y, direction)
+    def __init__(self, x, y, direction, level):
+        super().__init__(x, y, direction, level)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(FAST_PLANE, self.angle)
         self.default_img = FAST_PLANE
@@ -186,8 +271,8 @@ class FastPlane(Plane):
 
 
 class TinyPlane(Plane):
-    def __init__(self, x, y, direction):
-        super().__init__(x, y, direction)
+    def __init__(self, x, y, direction, level):
+        super().__init__(x, y, direction, level)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(TINY_PLANE, self.angle)
         self.default_img = TINY_PLANE
@@ -199,8 +284,8 @@ class TinyPlane(Plane):
 
 
 class SeaPlane(Plane):
-    def __init__(self, x, y, direction):
-        super().__init__(x, y, direction)
+    def __init__(self, x, y, direction, level):
+        super().__init__(x, y, direction, level)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(SEA_PLANE, self.angle)
         self.default_img = SEA_PLANE
@@ -213,8 +298,8 @@ class SeaPlane(Plane):
 
 
 class HeliPlane(Plane):
-    def __init__(self, x, y, direction):
-        super().__init__(x, y, direction)
+    def __init__(self, x, y, direction, level):
+        super().__init__(x, y, direction, level)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(HELI_PLANE, self.angle)
         self.default_img = HELI_PLANE

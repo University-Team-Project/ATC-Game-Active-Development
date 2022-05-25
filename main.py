@@ -5,7 +5,6 @@ from settings import *
 import random
 import time
 import plane as pl
-from Button import *
 
 # loads the bg assets from the assets folders
 BACKGROUND = pygame.image.load('assets/hawaii.png')
@@ -22,6 +21,7 @@ HELI_MASK = pygame.mask.from_surface(UNDERLAY_HELI_RUNWAY)
 WALL = pygame.image.load('assets/wall.png')
 MENUBACKGROUND = pygame.image.load('Main Menu Assets/Group.png')
 SCREEN = pygame.display.set_mode((1280, 720))
+
 
 # create a game class to create the game
 class Game:
@@ -52,8 +52,9 @@ class Game:
         self.score = 0
         self.lost = False
         pygame.time.set_timer(pygame.USEREVENT, 1000)
-        self.timer = 3
-        self.timeLimit = 3
+        self.timer = 1
+        self.timeLimit = 2
+        self.current_level = 1
 
         # set an integer to limit the number of planes
         self.limit = 3
@@ -77,7 +78,7 @@ class Game:
         if self.lost:
             # take user back to the main menu
             self.menu = True
-            restart_game()
+            self.playing = False
         else:
             if self.planes:
                 for plane in self.planes:
@@ -99,9 +100,10 @@ class Game:
             vector_y = direction_y_coord - y
             vector = pygame.Vector2(vector_x, vector_y)
             vector = pygame.Vector2.normalize(vector)
+            level = random.randint(1, 3)
             # loop through each subclass of Plane
             random_plane = random.choice(self.all_plane_classes)
-            random_plane = random_plane(x, y, vector)
+            random_plane = random_plane(x, y, vector, level)
             self.planes.append(random_plane)
 
     def update_planes(self):
@@ -146,7 +148,6 @@ class Game:
                             self.planes.remove(plane)
                             self.planes.remove(other_plane)
                             self.lose_game()
-                            print("Collision between [", plane.x, plane.y, "] and [", other_plane.x, other_plane.y, "]")
                             print("Collision between" + str(plane) + " and " + str(other_plane))
             # depending on the plane type, check if it collided with the appropriate runway
             plane.handle_runway(self)
@@ -170,7 +171,7 @@ class Game:
                             self.cursor.holding = True
                             plane.selected = True
                             plane.new_select = True
-                            print("plane selected")
+                            plane.interacted = True
 
             if event.type == pygame.MOUSEBUTTONUP:
                 for plane in self.planes:
@@ -179,7 +180,6 @@ class Game:
                             self.cursor.holding = False
                             plane.selected = False
                             plane.new_select = False
-                            print("Holding State: ", self.cursor.holding)
                 self.cursor.holding = False
 
             if event.type == pygame.MOUSEMOTION:
@@ -227,6 +227,7 @@ def how_to_play():
 
         pygame.display.update()
 
+
 def main_menu():
     game = Game()
     while game.menu:
@@ -269,7 +270,6 @@ def main_menu():
 
         pygame.display.update()
 
-    print("Reached")
     game.playing = True
     return game
 
@@ -284,17 +284,65 @@ def game_loop(game):
         game.event_loop()  # handles events
         game.update_planes()  # updates planes
         pygame.display.update()
-    # end_game(game)
+    return
 
 
 def end_game(game):
-    print("end screen")
+
+    while not game.playing:
+
+        game.clock.tick(game.fps)
+
+        SCREEN.blit(BACKGROUND, (0, 0))
+
+        menu_mouse_pos = pygame.mouse.get_pos()
+
+        menu_text = get_font(80).render("GAME OVER", True, "#FFFFFF")
+        menu_rect = menu_text.get_rect(center=(640, 100))
+
+        score_label = Button(image=pygame.image.load("Main Menu Assets/score_rect.png"), pos=(640, 300),
+                             text_input=f"SCORE: {game.score}", font=get_font(50), base_color="#FFFFFF",
+                             hovering_color="Grey")
+
+        restart_button = Button(image=pygame.image.load("Main Menu Assets/restart_rect.png"), pos=(640, 500),
+                                text_input="RESTART", font=get_font(50), base_color="#FFFFFF", hovering_color="Grey")
+
+        quit_button = Button(image=pygame.image.load("Main Menu Assets/quit_rect.png"), pos=(640, 650),
+                             text_input="Return to Main Menu", font=get_font(30), base_color="#FFFFFF", hovering_color="Grey")
+
+        SCREEN.blit(menu_text, menu_rect)
+
+        for button in [restart_button, score_label, quit_button]:
+            button.changeColor(menu_mouse_pos)
+            button.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if restart_button.checkForInput(menu_mouse_pos):
+                    restart_game_button()
+                elif quit_button.checkForInput(menu_mouse_pos):
+                    restart_menu()
 
 
-def restart_game():
+        pygame.display.update()
+
+    print("game over")
+    game.playing = True
+    return game
+
+def restart_game_button():
+    game = Game()
+    game_loop(game)
+    end_game(game)
+
+def restart_menu():
     game = main_menu()
     game_loop(game)
+    end_game(game)
 
 
 if __name__ == '__main__':
-    restart_game()
+    restart_menu()
