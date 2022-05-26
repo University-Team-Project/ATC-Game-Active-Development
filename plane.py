@@ -23,7 +23,7 @@ UNDERLAY_HELI_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay
 HELI_MASK = pygame.mask.from_surface(UNDERLAY_HELI_RUNWAY)
 
 class Plane():
-    def __init__(self, x, y, direction, level):
+    def __init__(self, x, y, direction):
         super().__init__()
         self.plane_id = self.__class__.__name__
         self.x = x
@@ -34,12 +34,12 @@ class Plane():
         self.plane_img = pygame.transform.rotate(BIG_PLANE, self.angle)
         self.default_img = BIG_PLANE
         self.mask = pygame.mask.from_surface(self.plane_img)
+        self.runway_img = UNDERLAY_LAND_RUNWAY
         self.runway_mask = LAND_MASK
         self.first_collided = False
         self.selected = False
         self.new_select = False
         self.inside = False
-        self.level = 1
         self.movements = []
         self.movements_length = len(self.movements)
         self.interacted = False
@@ -55,10 +55,6 @@ class Plane():
         x_offset = self.x - self.plane_img.get_rect().width / 2
         y_offset = self.y - self.plane_img.get_rect().height / 2
 
-        # if the plane is selected, draw a red border around the mask
-        if self.selected:
-            pygame.draw.rect(game.screen, (255, 0, 0), (x_offset, y_offset, self.plane_img.get_rect().width,
-                                                     self.plane_img.get_rect().height), 1)
         # for each movement in the list, draw a line from the last coordinate to the current one
         if self.movements and game.playing:
             for i in range(len(self.movements)):
@@ -74,7 +70,12 @@ class Plane():
 
         # draw the plane
         game.screen.blit(self.plane_img, (x_offset, y_offset))
-
+        # if the plane is selected, draw a red circle border in the center of the plane
+        if self.selected:
+            pygame.draw.circle(game.screen, (80, 80, 80), (self.x, self.y), self.default_img.get_rect().width / 2 + 8, 3)
+        # if the plane is selected highlight the runway mask
+        if self.selected and self.runway_img:
+            game.screen.blit(self.runway_img, (0, 0))
 
     def draw_runway(self, game):
         '''
@@ -249,8 +250,8 @@ class Plane():
 
 # create a child class of the plane class called small plane
 class SmallPlane(Plane):
-    def __init__(self, x, y, direction, level):
-        super().__init__(x, y, direction, level)
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, direction)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(SMALL_PLANE, self.angle)
         self.default_img = SMALL_PLANE
@@ -263,8 +264,8 @@ class SmallPlane(Plane):
 
 # create a child class of the plane class called big plane
 class BigPlane(Plane):
-    def __init__(self, x, y, direction, level):
-        super().__init__(x, y, direction, level)
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, direction)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(BIG_PLANE, self.angle)
         self.default_img = BIG_PLANE
@@ -276,8 +277,8 @@ class BigPlane(Plane):
 
 
 class FastPlane(Plane):
-    def __init__(self, x, y, direction, level):
-        super().__init__(x, y, direction, level)
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, direction)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(FAST_PLANE, self.angle)
         self.default_img = FAST_PLANE
@@ -289,8 +290,8 @@ class FastPlane(Plane):
 
 
 class TinyPlane(Plane):
-    def __init__(self, x, y, direction, level):
-        super().__init__(x, y, direction, level)
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, direction)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(TINY_PLANE, self.angle)
         self.default_img = TINY_PLANE
@@ -302,12 +303,13 @@ class TinyPlane(Plane):
 
 
 class SeaPlane(Plane):
-    def __init__(self, x, y, direction, level):
-        super().__init__(x, y, direction, level)
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, direction)
         self.plane_id = self.__class__.__name__
         self.plane_img = pygame.transform.rotate(SEA_PLANE, self.angle)
         self.default_img = SEA_PLANE
         self.runway_mask = SEA_MASK
+        self.runway_img = UNDERLAY_SEA_RUNWAY
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
         self.vel = 0.6
@@ -316,14 +318,15 @@ class SeaPlane(Plane):
 
 
 class HeliPlane(Plane):
-    def __init__(self, x, y, direction, level):
-        super().__init__(x, y, direction, level)
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, direction)
         self.plane_id = self.__class__.__name__
         self.animations = [HELI_PLANE, HELI_PLANE2, HELI_PLANE3]
         self.animation_frame = 0
         self.plane_img = pygame.transform.rotate(self.animations[self.animation_frame], self.angle)
         self.default_img = HELI_PLANE
         self.runway_mask = HELI_MASK
+        self.runway_img = UNDERLAY_HELI_RUNWAY
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
         self.vel = 0.4

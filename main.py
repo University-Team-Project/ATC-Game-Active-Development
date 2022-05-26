@@ -18,6 +18,8 @@ class Menu:
         self.clock = pygame.time.Clock()
         self.fps = 60
         pygame.time.set_timer(pygame.USEREVENT, 1000)
+        self.music_toggled = True
+        self.sound_effects_toggled = True
 
     # Retrieve Custom font for main menu
     def get_font(self, size):
@@ -75,10 +77,10 @@ class Menu:
         menu_text = self.get_font(100).render("GAMEMODE:", True, '#00323d')
         menu_rect = menu_text.get_rect(center=(640, 100))
 
-        standard_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 230),
+        standard_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 280),
                              text_input="STANDARD", font=self.get_font(64), base_color="#d7fcd4",
                              hovering_color="Grey")
-        advanced_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 360),
+        advanced_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 410),
                                     text_input="ADVANCED", font=self.get_font(64), base_color="#d7fcd4",
                                     hovering_color="Grey")
         back_button = Button(image=pygame.image.load("Main Menu Assets/Quit Rect.png"), pos=(640, 630),
@@ -114,8 +116,6 @@ class Menu:
 
             pygame.display.update()
 
-        return game
-
     def how_to_play(self):
         how_to_play_text = self.get_font(45).render("This is the TUTORIAL screen.", True, "Black")
         how_to_play_rect = how_to_play_text.get_rect(center=(640, 260))
@@ -140,18 +140,44 @@ class Menu:
             pygame.display.update()
 
     def settings(self):
+        self.load_settings()
         settings_text = self.get_font(100).render("SETTINGS", True, '#00323d')
         settings_rect = settings_text.get_rect(center=(640, 100))
-        settings_back = Button(image=pygame.image.load("Main Menu Assets/Quit Rect.png"), pos=(640, 630),
-                             text_input="BACK", font=self.get_font(64), base_color="#d7fcd4",
-                             hovering_color="Grey")
+        reset_to_default_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 490),
+                                      text_input="RESET TO DEFAULT", font=self.get_font(24), base_color="#d7fcd4",
+                                      hovering_color="Grey")
         while True:
+            if self.music_toggled:
+                music_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 230),
+                                      text_input="MUSIC: ENABLED", font=self.get_font(24), base_color="#d7fcd4",
+                                      hovering_color="Grey")
+            else:
+                music_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 230),
+                                      text_input="MUSIC: DISABLED", font=self.get_font(24), base_color="#d7fcd4",
+                                      hovering_color="Grey")
+            if self.sound_effects_toggled:
+                sound_effects_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"),
+                                              pos=(640, 360),
+                                              text_input="SOUND EFFECTS: ENABLED", font=self.get_font(24),
+                                              base_color="#d7fcd4", hovering_color="Grey")
+            else:
+                sound_effects_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"),
+                                              pos=(640, 360),
+                                              text_input="SOUND EFFECTS: DISABLED", font=self.get_font(24),
+                                              base_color="#d7fcd4", hovering_color="Grey")
+            settings_back = Button(image=pygame.image.load("Main Menu Assets/Quit Rect.png"), pos=(640, 630),
+                                   text_input="BACK", font=self.get_font(64), base_color="#d7fcd4",
+                                   hovering_color="Grey")
             options_mouse_pos = pygame.mouse.get_pos()
             # blit the background image
             self.screen.blit(self.background, (0, 0))
             self.screen.blit(settings_text, settings_rect)
             settings_back.changeColor(options_mouse_pos)
             settings_back.update(self.screen)
+
+            for button in [music_button, sound_effects_button, reset_to_default_button, settings_back]:
+                button.changeColor(options_mouse_pos)
+                button.update(self.screen)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -160,6 +186,50 @@ class Menu:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if settings_back.checkForInput(options_mouse_pos):
                         return
+                    elif music_button.checkForInput(options_mouse_pos):
+                        self.music_toggle()
+                        self.save_settings()
+                    elif sound_effects_button.checkForInput(options_mouse_pos):
+                        self.effects_toggle()
+                        self.save_settings()
+                    elif reset_to_default_button.checkForInput(options_mouse_pos):
+                        self.music_toggled = True
+                        self.sound_effects_toggled = True
+                        self.save_settings()
+
+
+            pygame.display.update()
+
+    def pause_menu(self):
+        paused_text = self.get_font(100).render("GAME PAUSED", True, '#00323d')
+        main_menu_rect = paused_text.get_rect(center=(640, 100))
+        resume_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 230),
+                                 text_input="RESUME", font=self.get_font(64), base_color="#d7fcd4",
+                                    hovering_color="Grey")
+        main_menu_button = Button(image=pygame.image.load("Main Menu Assets/Quit Rect.png"), pos=(640, 630),
+                               text_input="BACK", font=self.get_font(64), base_color="#d7fcd4",
+                               hovering_color="Grey")
+        while True:
+
+            options_mouse_pos = pygame.mouse.get_pos()
+            # blit the background image
+            self.screen.blit(self.background, (0, 0))
+            self.screen.blit(paused_text, main_menu_rect)
+
+            for button in [resume_button, main_menu_button]:
+                button.changeColor(options_mouse_pos)
+                button.update(self.screen)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if main_menu_button.checkForInput(options_mouse_pos):
+                        self.start()
+                    elif resume_button.checkForInput(options_mouse_pos):
+                        return
+
 
             pygame.display.update()
 
@@ -180,7 +250,7 @@ class Menu:
                            text_input="MAIN MENU", font=self.get_font(50), base_color="#FFFFFF",
                            hovering_color="Grey")
 
-        while not game.playing:
+        while game.end_screen:
 
             game.clock.tick(game.fps)
 
@@ -208,8 +278,8 @@ class Menu:
 
             pygame.display.update()
 
-        game.playing = True
-        return game
+        menu = Menu()
+        menu.start()
 
     def restart_game_button(self):
         menu = Menu()
@@ -226,6 +296,34 @@ class Menu:
         game = self.main_menu(game)
         game.game_loop()
         self.end_game(game)
+
+    def save_settings(self):
+        with open('save.json', 'w') as f:
+            data = {
+                'music: ': self.music_toggled,
+                'sound-effects: ': self.sound_effects_toggled,
+            }
+            json.dump(data, f)
+
+    def load_settings(self):
+        with open('save.json', 'r') as f:
+            data = json.load(f)
+            music_toggled = data['music: ']
+            sound_effects_toggled = data['sound-effects: ']
+        self.music_toggled = music_toggled
+        self.sound_effects_toggled = sound_effects_toggled
+
+    def music_toggle(self):
+        if self.music_toggled:
+            self.music_toggled = False
+        else:
+            self.music_toggled = True
+
+    def effects_toggle(self):
+        if self.sound_effects_toggled:
+            self.sound_effects_toggled = False
+        else:
+            self.sound_effects_toggled = True
 
 
 if __name__ == '__main__':

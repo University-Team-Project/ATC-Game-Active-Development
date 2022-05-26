@@ -1,5 +1,11 @@
+import json
+import pygame
+from settings import *
 from game import *
-
+from pygame import mixer
+import random
+import sys
+WALL = pygame.image.load('assets/wall.png')
 class Level:
     def __init__(self):
         # initialize pygame
@@ -31,6 +37,34 @@ class Level:
         mixer.music.load('Assets/sounds/music_loop.wav')
         mixer.music.set_volume(0.05)
         mixer.music.play(-1)
+        self.music_toggled = True
+        self.sound_effects_toggled = True
+        self.end_screen = False
+        self.pause = False
+
+    def load_settings(self):
+        with open('save.json', 'r') as f:
+            data = json.load(f)
+            music_toggled = data['music: ']
+            sound_effects_toggled = data['sound-effects: ']
+        if self.music_toggled != music_toggled:
+            self.music_toggle()
+        if self.sound_effects_toggled != sound_effects_toggled:
+            self.effects_toggle()
+
+    def music_toggle(self):
+        if self.music_toggled:
+            self.music_toggled = False
+            mixer.music.pause()
+        else:
+            self.music_toggled = True
+            mixer.music.unpause()
+
+    def effects_toggle(self):
+        if self.sound_effects_toggled:
+            self.sound_effects_toggled = False
+        else:
+            self.sound_effects_toggled = True
 
     def increase_score(self):
         self.score += 1
@@ -50,19 +84,17 @@ class Level:
 
         if self.planes:
             for plane in self.planes:
-                # if the level is 3, change the color of the plane image to red
-                if plane.level == 3:
-                    plane.fill(pygame.Color(255, 0, 0, 100))
-                elif plane.level == 2:
-                    # use the pixel array of the plane_img to change the color of the plane image to green
-                    plane.fill(pygame.Color(0, 0, 255, 100))
-                elif plane.level == 1:
-                    # use the pixel array of the plane_img to change the color of the plane image
-                    plane.fill(pygame.Color(0, 255, 0, 100))
-
                 plane.draw(self)
-                self.screen.blit(self.font.render(str(plane.level), 1, (255, 255, 255)), (plane.x, plane.y + 50))
-
+                text = self.font.render("  " + str(plane.level) + "  ", 1, (255, 255, 255))
+                temp_surface = pygame.Surface(text.get_size())
+                if plane.level == 1:
+                    temp_surface.fill(pygame.Color(85, 10, 109, 1))
+                elif plane.level == 2:
+                    temp_surface.fill(pygame.Color(36, 10, 129, 1))
+                elif plane.level == 3:
+                    temp_surface.fill(pygame.Color(129, 10, 10, 1))
+                temp_surface.blit(text, (0, 0))
+                self.screen.blit(temp_surface, (plane.x, plane.y+35))
 
     def add_planes(self):
         if len(self.planes) < self.limit:
@@ -126,7 +158,7 @@ class Level:
                     if plane.level == other_plane.level:
                         self.handle_plane_collisions(plane, other_plane)
 
-            elif plane.level == self.current_level:
+            if (plane.level == self.current_level) or (plane.plane_id == 'HeliPlane'):
                 plane.handle_runway(self)
 
 
@@ -156,10 +188,12 @@ class Level:
     def lose_game(self):
         self.lost = True
         self.playing = False
+        self.end_screen = True
         mixer.music.stop()
-        mixer.music.load('Assets/sounds/collision.wav')
-        mixer.music.set_volume(0.2)
-        mixer.music.play(1)
+        if self.sound_effects_toggled:
+            mixer.music.load('Assets/sounds/collision.wav')
+            mixer.music.set_volume(0.2)
+            mixer.music.play(1)
         return
 
     def event_loop(self):
@@ -198,6 +232,10 @@ class Level:
                     for plane in self.planes:
                         if plane.selected:
                             self.cursor.set_path(True, plane)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.pause = True
+                    self.pause_game()
             elif event.type == pygame.USEREVENT:
                 if self.timer < self.timeLimit:
                     self.timer += 1
@@ -205,7 +243,52 @@ class Level:
                     self.timer = 0
                     self.add_planes()
             # add a plane to the game at a random location every 20 seconds if there are less than 10 planes
+
+    def pause_game(self):
+        # create pygame font
+        font = pygame.font.Font("Main Menu Assets/font.ttf", 64)
+        paused_text = font.render("GAME PAUSED", True, '#00323d')
+        main_menu_rect = paused_text.get_rect(center=(640, 100))
+        resume_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 280),
+                               text_input="RESUME", font=font, base_color="#d7fcd4",
+                               hovering_color="Grey")
+        main_menu_button = Button(image=pygame.image.load("Main Menu Assets/Tutorial Rect.png"), pos=(640, 410),
+                                  text_input="MAIN MENU", font=font, base_color="#d7fcd4",
+                                  hovering_color="Grey")
+        while True:
+
+            options_mouse_pos = pygame.mouse.get_pos()
+            # blit the background image
+            self.screen.blit(self.background, (0, 0))
+            self.screen.blit(paused_text, main_menu_rect)
+
+            for button in [resume_button, main_menu_button]:
+                button.changeColor(options_mouse_pos)
+                button.update(self.screen)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.pause = False
+                        return
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if main_menu_button.checkForInput(options_mouse_pos):
+                        self.playing = False
+                        return
+                    elif resume_button.checkForInput(options_mouse_pos):
+                        self.pause = False
+                        return
+
+            pygame.display.update()
+
+    def reset(self):
+        self.__init__()
+
     def game_loop(self):
+        self.load_settings()
         while self.playing:
             self.clock.tick(self.fps)
             self.draw_objects()  # draws all objects
@@ -213,7 +296,7 @@ class Level:
             self.event_loop()  # handles events
             self.update_planes()  # updates planes
             pygame.display.update()
-        if not self.playing:
+        if self.lost:
             self.draw_objects()
             self.handle_collisions()
             pygame.display.update()
@@ -263,11 +346,11 @@ class Level_Plane():
         self.interacted = False
         self.length_of_movements = 0
 
-    def fill(self, color):
-        """Fill all pixels of the surface with color, preserve transparency."""
+    def fill(self, colour):
+        """Fill all pixels of the surface with colour, preserve transparency."""
         image = self.plane_img.copy()
         image.fill((0, 0, 0, 255), None, pygame.BLEND_RGBA_MULT)
-        image.fill(color[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)
+        image.fill(colour[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)
         self.plane_img = image
 
     def draw(self, game):
@@ -294,6 +377,8 @@ class Level_Plane():
 
         # draw the plane
         game.screen.blit(self.plane_img, (x_offset, y_offset))
+        if self.selected:
+            pygame.draw.circle(game.screen, (80, 80, 80), (self.x, self.y), self.default_img.get_rect().width / 2 + 8, 3)
 
     # move the plane in the direction of the direction vector
     def move(self, cursor):
