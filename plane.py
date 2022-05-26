@@ -22,6 +22,10 @@ SEA_MASK = pygame.mask.from_surface(UNDERLAY_SEA_RUNWAY)
 UNDERLAY_HELI_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay_heli_runway.png'), (1280, 720))
 HELI_MASK = pygame.mask.from_surface(UNDERLAY_HELI_RUNWAY)
 
+LAND_RUNWAY_OUTLINE = pygame.transform.scale(pygame.image.load('Assets/Land_Overlay.png'), (1280, 720))
+SEA_RUNWAY_OUTLINE = pygame.transform.scale(pygame.image.load('Assets/Sea_Overlay.png'), (1280, 720))
+HELI_RUNWAY_OUTLINE = pygame.transform.scale(pygame.image.load('Assets/Heli_Overlay.png'), (1280, 720))
+
 class Plane():
     def __init__(self, x, y, direction):
         super().__init__()
@@ -34,7 +38,7 @@ class Plane():
         self.plane_img = pygame.transform.rotate(BIG_PLANE, self.angle)
         self.default_img = BIG_PLANE
         self.mask = pygame.mask.from_surface(self.plane_img)
-        self.runway_img = UNDERLAY_LAND_RUNWAY
+        self.runway_img = LAND_RUNWAY_OUTLINE
         self.runway_mask = LAND_MASK
         self.first_collided = False
         self.selected = False
@@ -56,6 +60,9 @@ class Plane():
         y_offset = self.y - self.plane_img.get_rect().height / 2
 
         # for each movement in the list, draw a line from the last coordinate to the current one
+        # if the plane is selected highlight the runway mask
+        if self.selected and self.runway_img:
+            game.screen.blit(self.runway_img, (0, 0))
         if self.movements and game.playing:
             for i in range(len(self.movements)):
                 if i == 0:
@@ -73,9 +80,6 @@ class Plane():
         # if the plane is selected, draw a red circle border in the center of the plane
         if self.selected:
             pygame.draw.circle(game.screen, (80, 80, 80), (self.x, self.y), self.default_img.get_rect().width / 2 + 8, 3)
-        # if the plane is selected highlight the runway mask
-        if self.selected and self.runway_img:
-            game.screen.blit(self.runway_img, (0, 0))
 
     def draw_runway(self, game):
         '''
@@ -309,7 +313,7 @@ class SeaPlane(Plane):
         self.plane_img = pygame.transform.rotate(SEA_PLANE, self.angle)
         self.default_img = SEA_PLANE
         self.runway_mask = SEA_MASK
-        self.runway_img = UNDERLAY_SEA_RUNWAY
+        self.runway_img = SEA_RUNWAY_OUTLINE
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
         self.vel = 0.6
@@ -326,7 +330,7 @@ class HeliPlane(Plane):
         self.plane_img = pygame.transform.rotate(self.animations[self.animation_frame], self.angle)
         self.default_img = HELI_PLANE
         self.runway_mask = HELI_MASK
-        self.runway_img = UNDERLAY_HELI_RUNWAY
+        self.runway_img = HELI_RUNWAY_OUTLINE
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
         self.vel = 0.4

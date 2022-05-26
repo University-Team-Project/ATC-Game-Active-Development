@@ -210,8 +210,8 @@ class Level:
                 sys.exit()
                 # check if mouse is clicking on a plane
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if not self.cursor.holding:
-                    for plane in self.planes:
+                for plane in self.planes:
+                    if not self.cursor.holding:
                         if pygame.mouse.get_pressed()[0] and plane.plane_img.get_rect(center=(plane.x, plane.y)).collidepoint(event.pos):
                             self.cursor.holding = True
                             plane.selected = True
@@ -328,6 +328,10 @@ SEA_MASK = pygame.mask.from_surface(UNDERLAY_SEA_RUNWAY)
 UNDERLAY_HELI_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay_heli_runway.png'), (1280, 720))
 HELI_MASK = pygame.mask.from_surface(UNDERLAY_HELI_RUNWAY)
 
+LAND_RUNWAY_OUTLINE = pygame.transform.scale(pygame.image.load('Assets/Land_Overlay.png'), (1280, 720))
+SEA_RUNWAY_OUTLINE = pygame.transform.scale(pygame.image.load('Assets/Sea_Overlay.png'), (1280, 720))
+HELI_RUNWAY_OUTLINE = pygame.transform.scale(pygame.image.load('Assets/Heli_Overlay.png'), (1280, 720))
+
 class Level_Plane():
     def __init__(self, x, y, direction, level):
         super().__init__()
@@ -340,7 +344,7 @@ class Level_Plane():
         self.plane_img = pygame.transform.rotate(BIG_PLANE, self.angle)
         self.default_img = BIG_PLANE
         self.mask = pygame.mask.from_surface(self.plane_img)
-        self.runway_img = UNDERLAY_LAND_RUNWAY
+        self.runway_img = LAND_RUNWAY_OUTLINE
         self.runway_mask = LAND_MASK
         self.first_collided = False
         self.selected = False
@@ -370,6 +374,8 @@ class Level_Plane():
         y_offset = self.y - self.plane_img.get_rect().height / 2
 
         # for each movement in the list, draw a line from the last coordinate to the current one
+        if self.selected and self.runway_img:
+            game.screen.blit(self.runway_img, (0, 0))
         if self.movements and game.playing:
             for i in range(len(self.movements)):
                 if i == 0:
@@ -386,8 +392,6 @@ class Level_Plane():
         game.screen.blit(self.plane_img, (x_offset, y_offset))
         if self.selected:
             pygame.draw.circle(game.screen, (80, 80, 80), (self.x, self.y), self.default_img.get_rect().width / 2 + 8, 3)
-        if self.selected and self.runway_img:
-            game.screen.blit(self.runway_img, (0, 0))
 
     def draw_runway(self, game):
         '''
@@ -623,7 +627,7 @@ class SeaPlane(Level_Plane):
         self.runway_mask = SEA_MASK
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
-        self.runway_img = UNDERLAY_SEA_RUNWAY
+        self.runway_img = SEA_RUNWAY_OUTLINE
         self.vel = 0.6
         self.width = self.plane_img.get_width()
         self.height = self.plane_img.get_height()
@@ -640,7 +644,7 @@ class HeliPlane(Level_Plane):
         self.runway_mask = HELI_MASK
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
-        self.runway_img = UNDERLAY_HELI_RUNWAY
+        self.runway_img = HELI_RUNWAY_OUTLINE
         self.vel = 0.4
         self.width = self.plane_img.get_width()
         self.height = self.plane_img.get_height()

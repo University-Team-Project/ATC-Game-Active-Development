@@ -1,6 +1,14 @@
 import pygame
 import math
 
+UNDERLAY_LAND_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay_land_runway.png'), (1280, 720))
+LAND_MASK = pygame.mask.from_surface(UNDERLAY_LAND_RUNWAY)
+
+UNDERLAY_SEA_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay_sea_runway.png'), (1280, 720))
+SEA_MASK = pygame.mask.from_surface(UNDERLAY_SEA_RUNWAY)
+
+UNDERLAY_HELI_RUNWAY = pygame.transform.scale(pygame.image.load('Assets/underlay_heli_runway.png'), (1280, 720))
+HELI_MASK = pygame.mask.from_surface(UNDERLAY_HELI_RUNWAY)
 
 class Button:
     def __init__(self, image, pos, text_input, font, base_color, hovering_color):
@@ -43,6 +51,7 @@ class Cursor:
         self.x = 0
         self.y = 0
         self.holding = False
+        self.runway_masks = [LAND_MASK, SEA_MASK, HELI_MASK]
 
     def set_path(self, holding, obj=None):
 
@@ -74,3 +83,16 @@ class Cursor:
             else:
                 obj.movements.pop()
                 self.holding = False
+
+    def runway_collide(self):
+        '''
+        Manages the collisions between the plane and the runway
+        :param runway_mask:
+        :param x:
+        :param y:
+        :return:
+        '''
+        for mask in self.runway_masks:
+            poi = mask.overlap(mask, (self.x, self.y))
+            if poi:
+                return poi

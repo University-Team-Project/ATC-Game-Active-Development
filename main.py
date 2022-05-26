@@ -5,6 +5,7 @@ import random
 from game import *
 from levels import *
 import plane as pl
+from moviepy.editor import *
 
 class Menu:
     def __init__(self):
@@ -117,27 +118,41 @@ class Menu:
             pygame.display.update()
 
     def how_to_play(self):
-        how_to_play_text = self.get_font(45).render("This is the TUTORIAL screen.", True, "Black")
-        how_to_play_rect = how_to_play_text.get_rect(center=(640, 260))
-        how_to_play_back = Button(image=None, pos=(640, 460),
-                                  text_input="BACK", font=self.get_font(75), base_color="Black",
-                                  hovering_color="Red")
+        back_button = Button(image=pygame.image.load("Main Menu Assets/return_long.png"), pos=(150, 55),
+                                      text_input="MAIN MENU", font=self.get_font(24), base_color="#d7fcd4",
+                                      hovering_color="Grey")
+        play_video_button = Button(image=pygame.image.load("Main Menu Assets/play_video.png"), pos=(640, 613),
+                                        text_input="WATCH TUTORIAL", font=self.get_font(24), base_color="#d7fcd4",
+                                        hovering_color="Grey")
         while True:
+            self.screen.blit(pygame.image.load("Main Menu Assets/how_to_play.png"), (0, 0))
+
             options_mouse_pos = pygame.mouse.get_pos()
-            self.screen.fill("white")
-            self.screen.blit(how_to_play_text, how_to_play_rect)
-            how_to_play_back.changeColor(options_mouse_pos)
-            how_to_play_back.update(self.screen)
+
+            for button in [back_button, play_video_button]:
+                button.changeColor(options_mouse_pos)
+                button.update(self.screen)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if how_to_play_back.checkForInput(options_mouse_pos):
+                    if back_button.checkForInput(options_mouse_pos):
                         return
+                    elif play_video_button.checkForInput(options_mouse_pos):
+                        self.play_tutorial()
 
             pygame.display.update()
+
+    def play_tutorial(self):
+        clip = VideoFileClip("Main Menu Assets/Tutorial.mp4")
+        clip.resize((1280, 720))
+        clip.set_duration(70)
+        clip.set_fps(60)
+        clip.volumex(0.1)
+        clip.preview()
+        return
 
     def settings(self):
         self.load_settings()
