@@ -23,6 +23,7 @@ class Level:
         self.clock = pygame.time.Clock()
         self.fps = 60
         self.planes = []
+        self.planes_on_runway = []
         self.all_plane_classes = []
         for plane in Level_Plane.__subclasses__():
             self.all_plane_classes.append(plane)
@@ -81,7 +82,11 @@ class Level:
         self.lostLabel = self.font.render("You Lost", 1, (255, 255, 255))
         # draw all the planes
         # check if the planes list is empty
-
+        if self.planes_on_runway:
+            for plane in self.planes_on_runway:
+                alpha = plane.draw_runway(self)
+                if alpha <= 0:
+                    self.planes_on_runway.remove(plane)
         if self.planes:
             for plane in self.planes:
                 plane.draw(self)
@@ -123,6 +128,7 @@ class Level:
             plane.move(self.cursor)
 
     def remove_plane(self, plane):
+        self.planes_on_runway.append(plane)
         self.planes.remove(plane)
         return
 
@@ -245,7 +251,6 @@ class Level:
             # add a plane to the game at a random location every 20 seconds if there are less than 10 planes
 
     def pause_game(self):
-        # create pygame font
         font = pygame.font.Font("Main Menu Assets/font.ttf", 64)
         paused_text = font.render("GAME PAUSED", True, '#00323d')
         main_menu_rect = paused_text.get_rect(center=(640, 100))
@@ -335,6 +340,7 @@ class Level_Plane():
         self.plane_img = pygame.transform.rotate(BIG_PLANE, self.angle)
         self.default_img = BIG_PLANE
         self.mask = pygame.mask.from_surface(self.plane_img)
+        self.runway_img = UNDERLAY_LAND_RUNWAY
         self.runway_mask = LAND_MASK
         self.first_collided = False
         self.selected = False
@@ -345,6 +351,7 @@ class Level_Plane():
         self.movements_length = len(self.movements)
         self.interacted = False
         self.length_of_movements = 0
+        self.alpha = 255
 
     def fill(self, colour):
         """Fill all pixels of the surface with colour, preserve transparency."""
@@ -379,8 +386,23 @@ class Level_Plane():
         game.screen.blit(self.plane_img, (x_offset, y_offset))
         if self.selected:
             pygame.draw.circle(game.screen, (80, 80, 80), (self.x, self.y), self.default_img.get_rect().width / 2 + 8, 3)
+        if self.selected and self.runway_img:
+            game.screen.blit(self.runway_img, (0, 0))
 
-    # move the plane in the direction of the direction vector
+    def draw_runway(self, game):
+        '''
+        Draw the plane using an offset to the center of the plane
+        :param win: the window to draw the plane on
+        :return:
+        '''
+        x_offset = self.x - self.plane_img.get_rect().width / 2
+        y_offset = self.y - self.plane_img.get_rect().height / 2
+
+        self.alpha -= 5
+        self.plane_img.set_alpha(self.alpha)
+        game.screen.blit(self.plane_img, (x_offset, y_offset))
+        return self.alpha
+
     def move(self, cursor):
         '''
         Change the x and y coordinates of the plane based on the direction vector
@@ -515,7 +537,7 @@ class Level_Plane():
         for plane in Level_Plane.__subclasses__():
             if self.plane_id == plane.__name__:
                 if self.runway_collide(self.runway_mask, 0, 0) and self.interacted is not False:
-                    game.planes.remove(self)
+                    game.remove_plane(self)
                     game.increase_score()
 
     def refract(self, collide_point):
@@ -601,6 +623,7 @@ class SeaPlane(Level_Plane):
         self.runway_mask = SEA_MASK
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
+        self.runway_img = UNDERLAY_SEA_RUNWAY
         self.vel = 0.6
         self.width = self.plane_img.get_width()
         self.height = self.plane_img.get_height()
@@ -617,6 +640,7 @@ class HeliPlane(Level_Plane):
         self.runway_mask = HELI_MASK
         # create the plane image mask
         self.mask = pygame.mask.from_surface(self.plane_img)
+        self.runway_img = UNDERLAY_HELI_RUNWAY
         self.vel = 0.4
         self.width = self.plane_img.get_width()
         self.height = self.plane_img.get_height()

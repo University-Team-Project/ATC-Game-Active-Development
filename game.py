@@ -53,7 +53,7 @@ class Game:
         pygame.time.set_timer(pygame.USEREVENT, 1000)
         mixer.init()
         mixer.music.load('Assets/sounds/music_loop.wav')
-        mixer.music.set_volume(0.3)
+        mixer.music.set_volume(0.05)
         mixer.music.play(-1)
 
     def save_settings(self):
@@ -211,7 +211,7 @@ class Game:
         for event in pygame.event.get():
             # check if the user wants to quit
             if event.type == pygame.QUIT:
-                self.playing = False
+                pygame.quit()
                 sys.exit()
                 # check if mouse is clicking on a plane
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -250,7 +250,6 @@ class Game:
                     self.add_planes()
 
     def pause_game(self):
-        # create pygame font
         font = pygame.font.Font("Main Menu Assets/font.ttf", 64)
         paused_text = font.render("GAME PAUSED", True, '#00323d')
         main_menu_rect = paused_text.get_rect(center=(640, 100))
