@@ -32,7 +32,7 @@ class Game:
         self.screen = pygame.display.set_mode((1280, 720))
         self.background = pygame.image.load('assets/hawaii.png')
         pygame.display.set_caption("ATC Game")
-        self.font = pygame.font.SysFont("arial", 20)
+        self.font = pygame.font.SysFont("Main Menu Assets/font.ttf", 40)
         self.wall = self.screen.blit(WALL, (0, 0))
         self.wallMask = pygame.mask.from_surface(WALL)
         self.clock = pygame.time.Clock()
@@ -96,13 +96,21 @@ class Game:
         if self.score > 20 and self.timeLimit > 1:
             self.timeLimit = 1
 
+    def change_clock(self):
+        if self.fps == 60:
+            self.fps = 120
+            self.clock.tick(self.fps)
+        elif self.fps == 120:
+            self.fps = 60
+            self.clock.tick(self.fps)
+
     # create a function to draw objects
     def draw_objects(self):
         # draw the self.background image
         self.screen.blit(pygame.transform.scale(self.background, (1280, 720)), (0, 0))
         # create a label for the score
         self.scoreLabel = self.font.render("Score: " + str(self.score), 1, (255, 255, 255))
-        self.screen.blit(self.scoreLabel, (630, 10))
+        self.screen.blit(self.scoreLabel, (640 - self.scoreLabel.get_rect().width / 4, 10))
         # create a label for the lost message
         self.lostLabel = self.font.render("You Lost", 1, (255, 255, 255))
         # draw all the planes
@@ -246,6 +254,8 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.pause = True
                     self.pause_game()
+                if event.key == pygame.K_f:
+                    self.change_clock()
             elif event.type == pygame.USEREVENT:
                 if self.timer < self.timeLimit:
                     self.timer += 1
