@@ -51,7 +51,6 @@ class Cursor:
         self.x = 0
         self.y = 0
         self.holding = False
-        self.runway_masks = [LAND_MASK, SEA_MASK, HELI_MASK]
 
     def set_path(self, holding, obj=None):
 
@@ -83,16 +82,3 @@ class Cursor:
             else:
                 obj.movements.pop()
                 self.holding = False
-
-    def runway_collide(self):
-        '''
-        Manages the collisions between the plane and the runway
-        :param runway_mask:
-        :param x:
-        :param y:
-        :return:
-        '''
-        for mask in self.runway_masks:
-            poi = mask.overlap(mask, (self.x, self.y))
-            if poi:
-                return poi

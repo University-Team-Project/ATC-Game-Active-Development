@@ -27,6 +27,8 @@ class Game:
         self.cursor = Cursor()
         # create a self.screen
         self.length, self.height = 1280, 720
+        self.programIcon = pygame.image.load('icon.png')
+        pygame.display.set_icon(self.programIcon)
         self.screen = pygame.display.set_mode((1280, 720))
         self.background = pygame.image.load('assets/hawaii.png')
         pygame.display.set_caption("ATC Game")
@@ -45,7 +47,7 @@ class Game:
         self.timer = 2  # timer to keep track of planes spawning
         self.timeLimit = 2  # time limit between planes spawning
         self.current_level = 1  # current level of the game view
-        self.limit = 4  # limit of planes to spawn
+        self.limit = 5  # limit of planes to spawn
         self.music_toggled = True
         self.sound_effects_toggled = True
         self.pause = False
@@ -91,6 +93,8 @@ class Game:
     def increase_score(self):
         self.score += 1
         self.limit += 0.5
+        if self.score > 20 and self.timeLimit > 1:
+            self.timeLimit = 1
 
     # create a function to draw objects
     def draw_objects(self):

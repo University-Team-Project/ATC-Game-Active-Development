@@ -14,6 +14,8 @@ class Menu:
         self.cursor = Cursor()
         self.background = pygame.image.load('assets/hawaii.png')
         self.length, self.height = 1280, 720
+        self.programIcon = pygame.image.load('icon.png')
+        pygame.display.set_icon(self.programIcon)
         self.screen = pygame.display.set_mode((1280, 720))
         pygame.display.set_caption("ATC Game")
         self.clock = pygame.time.Clock()
@@ -147,9 +149,8 @@ class Menu:
 
     def play_tutorial(self):
         clip = VideoFileClip("Main Menu Assets/Tutorial.mp4")
-        clip.resize((1280, 720))
-        clip.set_duration(70)
-        clip.set_fps(60)
+        clip.set_duration(110)
+        clip.set_fps(30)
         clip.volumex(0.1)
         clip.preview()
         return
