@@ -14,7 +14,7 @@ class Menu:
         self.cursor = Cursor()
         self.background = pygame.image.load('assets/hawaii.png')
         self.length, self.height = 1280, 720
-        self.programIcon = pygame.image.load('icon.png')
+        self.programIcon = pygame.image.load('assets/fc_icon.ico')
         pygame.display.set_icon(self.programIcon)
         self.screen = pygame.display.set_mode((1280, 720))
         pygame.display.set_caption("ATC Game")
